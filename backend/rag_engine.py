@@ -1,4 +1,6 @@
 from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage
+from llama_index.retrievers. bm25 import BM25Retriever
+from llama_index.core.retrievers import QueryFusionRetriever
 from llama_index.core.settings import Settings
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
@@ -22,7 +24,22 @@ def init_rag_engine(llm_instance):
             vector_store=SimpleVectorStore.from_persist_dir(persist_dir=PERSIST_DIR),
             index_store=SimpleIndexStore.from_persist_dir(persist_dir=PERSIST_DIR)
         )
-        return load_index_from_storage(storage_context).as_query_engine(llm=llm_instance, streaming=True)
+        index=load_index_from_storage(storgae_context)
+        node = list(storage_context.docstore.docs.value())
+        bm25_retiever=BM25Retriever.from_defaults(nodes=nodes, similarity_top_k=5)
+        dende_retriever= index.as_retriever(similarity_top_k=5)
+        hybrid_retriever = QueryFusioRetriever([dense_retriever, bm25_retriever]'
+        similarity_top_k=5,
+        num_queries=1,
+        mode="reciprocal_rerank",
+        use_async=False
+        )
+        rag_query_engine= index.as_query_engine(
+            llm=llm_instance,
+            retriever=hybrid_retriever,
+            streaming=True          
+        )
+        return rag_query_engine
     except Exception:
         return None
 

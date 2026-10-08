@@ -1,6 +1,8 @@
 # ingest.py - The corrected script to build the searchable index
 
 import os
+from llama_index.retrievers.bm25 import BM25Retriever
+import pickle
 # NOTE: We use VectorStoreIndex from core as it's the base class
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.core.ingestion import IngestionPipeline
@@ -58,6 +60,15 @@ def create_or_update_index():
     # pipeline.run() returns a list of Nodes, NOT the index object.
     nodes = pipeline.run(documents=documents)
     print(f"Processed {len(nodes)} nodes (chunks).")
+    bm25_retriver= BM25Retriever.from_defaults(
+        nodes=nodes,
+        similarity_top_k=5
+    )
+    print ("Sparse BM25 retiever created.") 
+    print("Sparse BM25 retriever created")
+    with open("./storage/bm25_retiever.pkl","wb") as f:
+        pickle.dump (bm25_retriever, f)
+    print("sparse retiever saved.")
     
     # We must explicitly create the index object from the processed nodes and storage context
     index = VectorStoreIndex(
